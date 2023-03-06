@@ -2,21 +2,17 @@ import numpy as np
 
 class BlottoAgent:
     
-    def __init__(self, num_players, num_towers, num_soldiers, setup_func, opening_strategy_func, strategy_func):
-        #initialize empty list to be filled with state parameters
-        self.parameters = []
-        self.num_towers = num_towers
-        self.num_players = num_players
-        self.num_soldiers = num_soldiers
-        #fill parameters with necessary state variables according to game constraints
-        setup_func(self.parameters, num_players, num_towers, num_soldiers)
+    def __init__(self, initial_parameters, opening_strategy_func, strategy_func):
+
+        self.parameters = initial_parameters
+        
         self.opening_strategy_func = opening_strategy_func
         self.strategy_func = strategy_func
         
     def get_opening_strategy(self):
         return opening_strategy_func(self)
     
-    def get_next_strategy(prev_round_strategies, prev_round_scores, prev_round_wins, self_index):
+    def get_next_strategy(self, prev_round_strategies, prev_round_scores, prev_round_wins, self_index):
         return strategy_func(self, prev_round_strategies, prev_round_scores, prev_round_wins, self_index)
     
 def simulate_blotto_game(agents, num_towers, num_soldiers, num_rounds):
@@ -62,3 +58,4 @@ def calculate_scores_and_wins(strategies):
             
 def average_scores_and_wins(historical_scores, historical_wins):
     pass
+
