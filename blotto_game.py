@@ -17,8 +17,6 @@ class BlottoAgent:
     
 def simulate_blotto_game(agents, num_towers, num_soldiers, num_rounds):
     strategies = [agent.get_opening_strategy() for agent in agents]
-    cumulative_scores = [0] * num_players
-    cumulative_wins = [0] * num_players
     historical_scores = []
     historical_wins = []
     for r in range(num_rounds):
@@ -58,4 +56,3 @@ def calculate_scores_and_wins(strategies):
             
 def average_scores_and_wins(historical_scores, historical_wins):
     pass
-
