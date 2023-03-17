@@ -10,12 +10,12 @@ class BlottoAgent:
         self.strategy_func = strategy_func
         
     def get_opening_strategy(self):
-        return opening_strategy_func(self)
+        return self.opening_strategy_func(self)
     
     def get_next_strategy(self, prev_round_strategies, prev_round_scores, prev_round_wins, self_index):
-        return strategy_func(self, prev_round_strategies, prev_round_scores, prev_round_wins, self_index)
+        return self.strategy_func(self, prev_round_strategies, prev_round_scores, prev_round_wins, self_index)
     
-def simulate_blotto_game(agents, num_towers, num_soldiers, num_rounds):
+def simulate_blotto_game(agents, num_rounds):
     strategies = [agent.get_opening_strategy() for agent in agents]
     historical_scores = []
     historical_wins = []
@@ -24,14 +24,15 @@ def simulate_blotto_game(agents, num_towers, num_soldiers, num_rounds):
         historical_scores.append(scores)
         historical_wins.append(wins)
         strategies = [agent.get_next_strategy(strategies, scores, wins, i) for i, agent in enumerate(agents)]
-    return historical_scores, historical_wins
+    listy = [historical_scores, historical_wins, average_scores_and_wins(historical_scores, historical_wins)]
+    return listy
     
 def calculate_scores_and_wins(strategies):
     num_players = len(strategies)
     num_towers = len(strategies[0])
     scores = [0] * num_players
     wins = [0] * num_players
-    for i in range(num_players)
+    for i in range(num_players):
         for j in range(i + 1, num_players):
             iscore = 0
             jscore = 0
@@ -55,4 +56,6 @@ def calculate_scores_and_wins(strategies):
     return scores, wins
             
 def average_scores_and_wins(historical_scores, historical_wins):
-    pass
+    average_scores = np.array(historical_scores).mean(axis=0)
+    average_wins = np.array(historical_wins).mean(axis=0)
+    return average_scores.tolist(), average_wins.tolist()
