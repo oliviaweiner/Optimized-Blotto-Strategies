@@ -11,7 +11,7 @@ RANDOM_SEED = 5
 tf.random.set_seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
 
-def create_model(state_shape, action_shape)
+def create_model(state_shape, action_shape):
     """ The agent maps X-states to Y-actions
     e.g. The neural network output is [.1, .7, .1, .3]
     The highest value 0.7 is the Q-Value.
@@ -41,8 +41,8 @@ class DeepQNagent:
         self.min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time
         self.decay = 0.01
 
-        self.model = create_model_fn((n_towers,), (n_towers,))
-        self.target_model = create_model_fn((n_towers,), (n_towers,))
+        self.model = create_model_fn((n_towers,), n_towers)
+        self.target_model = create_model_fn((n_towers,), n_towers)
         self.target_model.set_weights(self.model.get_weights())
 
         self.replay_memory = deque(maxlen=50_000)
@@ -51,7 +51,7 @@ class DeepQNagent:
         self.total_training_rewards = 0
 
         self.n_towers = n_towers
-        self.n_solders = n_soldiers
+        self.n_soldiers = n_soldiers
 
     def get_qs(self, state, step):
         return self.model.predict(state.reshape([1, state.shape[0]]))[0]
@@ -84,48 +84,45 @@ class DeepQNagent:
         self.model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)
 
 
-    def create_DQN_agent(strategy_list, num_towers, num_soldiers, weights=None):
-        DQN_agent = DeepQNagent(num_towers, num_soldiers, create_model)
-        return blotto_game.BlottoAgent(DQN_agent, DQN_first_strategy, DQN_strategy)
+def create_DQN_agent(strategy_list, num_towers, num_soldiers, weights=None):
+    DQN_agent = DeepQNagent(num_towers, num_soldiers, create_model)
+    return blotto_game.BlottoAgent(DQN_agent, DQN_first_strategy, DQN_strategy)
 
 
-    def DQN_first_strategy(self_agent):
-        DQN_agent = self_agent.parameters
-        return random_strategy(DQN_agent)
+def DQN_first_strategy(self_agent):
+    DQN_agent = self_agent.parameters
+    return random_strategy(DQN_agent)
 
-    def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_round_wins, self_index):
-        DQN_agent = self_agent.parameters
-        observation = prev_round_scores[-1] #check what format should be in given take shape of
-        DQN_agent.replay_memory.append([prev_round_strategies[-2], prev_round_strategies[-2][self_index], prev_round_scores[-2][self_index], observation])
+def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_round_wins, self_index):
+    DQN_agent = self_agent.parameters
+    observation = prev_round_scores[-1] #check what format should be in given take shape of
+    DQN_agent.replay_memory.append([prev_round_strategies[-2], prev_round_strategies[-2][self_index], prev_round_scores[-2][self_index], observation])
 
-        DQN_agent.steps_to_update_target_model += 1
-        DQN_agent.total_steps += 1
-        random_number = np.random.rand()
+    DQN_agent.steps_to_update_target_model += 1
+    DQN_agent.total_steps += 1
+    random_number = np.random.rand()
 
-        # 1. Update the Main Network using the Bellman Equation
-        if DQN_agent.steps_to_update_target_model % 4 == 0:
-            DQN_agent.train() #check if correct format
+    # 1. Update the Main Network using the Bellman Equation
+    if DQN_agent.steps_to_update_target_model % 4 == 0:
+        DQN_agent.train() #check if correct format
 
-        # 2. Explore using the Epsilon Greedy Exploration Strategy
-        if random_number <= DQN_agent.epsilon:
-            # Explore
-            action = random_strategy(DQN_agent)
+    # 2. Explore using the Epsilon Greedy Exploration Strategy
+    if random_number <= DQN_agent.epsilon:
+        # Explore
+        action = random_strategy(DQN_agent)
 
-        else:
-            # Exploit best known action
-            # model dims are (batch, env.observation_space.n)
-            encoded = observation
-            encoded_reshaped = encoded.reshape([1, encoded.shape[0]])
-            predicted = DQN_agent.model.predict(encoded_reshaped).flatten()
-            action = np.argmax(predicted)
+    else:
+        # Exploit best known action
+        # model dims are (batch, env.observation_space.n)
+        encoded = observation
+        encoded_reshaped = encoded.reshape([1, encoded.shape[0]])
+        predicted = DQN_agent.model.predict(encoded_reshaped).flatten()
+        action = np.argmax(predicted)
 
-        #new_observation, reward, done, info = env.step(action)
-        #replay_memory.append([observation, action, reward, new_observation, done])
+    if DQN_agent.steps_to_update_target_model >= 100:
+        print('Copying main network weights to the target network weights')
+        DQN_agent.target_model.set_weights(DQN_agent.model.get_weights())
+        DQN_agent.steps_to_update_target_model = 0
+        DQN_agent.epsilon = DQN_agent.min_epsilon + (DQN_agent.max_epsilon - DQN_agent.min_epsilon) * np.exp(-DQN_agent.decay * DQN_agent.total_steps)
 
-        if DQN_agent.steps_to_update_target_model >= 100:
-            print('Copying main network weights to the target network weights')
-            DQN_agent.target_model.set_weights(DQN_agent.model.get_weights())
-            DQN_agent.steps_to_update_target_model = 0
-            DQN_agent.epsilon = DQN_agent.min_epsilon + (DQN_agent.max_epsilon - DQN_agent.min_epsilon) * np.exp(-DQN_agent.decay * DQN_agent.total_steps)
-
-        return action
+    return action
