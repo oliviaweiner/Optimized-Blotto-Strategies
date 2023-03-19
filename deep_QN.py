@@ -95,7 +95,7 @@ def DQN_first_strategy(self_agent):
 
 def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_round_wins, self_index):
     DQN_agent = self_agent.parameters
-    observation = prev_round_scores[-1] #check what format should be in given take shape of
+    observation = prev_round_strategies[-1]
     DQN_agent.replay_memory.append([prev_round_strategies[-2], prev_round_strategies[-2][self_index], prev_round_scores[-2][self_index], observation])
 
     DQN_agent.steps_to_update_target_model += 1
@@ -114,8 +114,9 @@ def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_roun
     else:
         # Exploit best known action
         # model dims are (batch, env.observation_space.n)
-        encoded = observation
-        encoded_reshaped = encoded.reshape([1, encoded.shape[0]])
+        encoded = np.array(observation)
+        encoded2 = encoded.sum(axis=0)
+        encoded_reshaped = encoded2.reshape([1, encoded2.shape[0]])
         predicted = DQN_agent.model.predict(encoded_reshaped).flatten()
         action = np.argmax(predicted)
 
