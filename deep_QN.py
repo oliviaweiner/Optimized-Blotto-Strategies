@@ -67,9 +67,11 @@ class DeepQNagent:
         batch_size = 64
         mini_batch = random.sample(self.replay_memory, batch_size)
         current_states = np.array([transition[0] for transition in mini_batch])
-        current_qs_list = self.model.predict(current_states)
+        current_states2 = current_states.sum(axis=1)
+        current_qs_list = self.model.predict(current_states2)
         new_current_states = np.array([transition[3] for transition in mini_batch])
-        future_qs_list = self.target_model.predict(new_current_states)
+        new_current_states2 = new_current_states.sum(axis=1)
+        future_qs_list = self.target_model.predict(new_current_states2)
 
         X = []
         Y = []
@@ -79,7 +81,9 @@ class DeepQNagent:
             current_qs = current_qs_list[index]
             current_qs[action] = (1 - learning_rate) * current_qs[action] + learning_rate * max_future_q
 
-            X.append(observation)
+            observation2 = np.array(observation)
+            observation3 = observation2.sum(axis=0)
+            X.append(observation3)
             Y.append(current_qs)
         self.model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)
 
