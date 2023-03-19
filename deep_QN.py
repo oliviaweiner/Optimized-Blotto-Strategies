@@ -53,6 +53,11 @@ class DeepQNagent:
         self.n_towers = n_towers
         self.n_soldiers = n_soldiers
 
+        self.last_observation = None
+        self.last_action = None
+        self.last_reward = None
+
+
     def get_qs(self, state, step):
         return self.model.predict(state.reshape([1, state.shape[0]]))[0]
 
@@ -79,7 +84,8 @@ class DeepQNagent:
         for index, (observation, action, reward, new_observation) in enumerate(mini_batch):
             max_future_q = reward + discount_factor * np.max(future_qs_list[index])
             current_qs = current_qs_list[index]
-            current_qs[action] = (1 - learning_rate) * current_qs[action] + learning_rate * max_future_q
+            action2 = np.argmax(action)
+            current_qs[action2] = (1 - learning_rate) * current_qs[action2] + learning_rate * max_future_q
 
             observation2 = np.array(observation)
             observation3 = observation2.sum(axis=0)
@@ -99,8 +105,12 @@ def DQN_first_strategy(self_agent):
 
 def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_round_wins, self_index):
     DQN_agent = self_agent.parameters
-    observation = prev_round_strategies[-1]
-    DQN_agent.replay_memory.append([prev_round_strategies[-2], prev_round_strategies[-2][self_index], prev_round_scores[-2][self_index], observation])
+    observation = prev_round_strategies
+    if DQN_agent.last_observation != None:
+        DQN_agent.replay_memory.append([DQN_agent.last_observation, DQN_agent.last_action, DQN_agent.last_reward, observation])
+    DQN_agent.last_observation = observation
+    DQN_agent.last_action = observation[self_index]
+    DQN_agent.last_reward = prev_round_scores[self_index]
 
     DQN_agent.steps_to_update_target_model += 1
     DQN_agent.total_steps += 1
@@ -122,7 +132,14 @@ def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_roun
         encoded2 = encoded.sum(axis=0)
         encoded_reshaped = encoded2.reshape([1, encoded2.shape[0]])
         predicted = DQN_agent.model.predict(encoded_reshaped).flatten()
-        action = np.argmax(predicted)
+        
+        prob_towers = tf.nn.softmax(predicted)
+        prob_towers = np.array(prob_towers)
+        prob_towers = prob_towers / prob_towers.sum()
+        action = [0 for tower in range(DQN_agent.n_towers)]
+        for soldier in range(DQN_agent.n_soldiers):
+            pick = np.random.choice(np.arange(0, DQN_agent.n_towers), p=prob_towers)
+            action[pick] += 1
 
     if DQN_agent.steps_to_update_target_model >= 100:
         print('Copying main network weights to the target network weights')
