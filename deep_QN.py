@@ -33,6 +33,22 @@ def random_strategy(agent):
         strategy[tower] += 1
     return strategy
 
+def partitions(n, k):
+    output = []
+    for c in itertools.combinations(range(n+k-1), k-1):
+        output.append([b-a-1 for a, b in zip((-1,)+c, c+(n+k-1,))])
+    return output
+
+def action_dicts(n_soldiers, n_towers):
+    n_actions = math.comb(n_soldiers + n_towers - 1, n_soldiers)
+    act_to_int = {}
+    int_to_act = {}
+    for i, arr in enumerate(partitions(n_soldiers, n_towers)):
+        act_to_int[str(arr)] = i
+        int_to_act[i] = arr
+    return (n_actions, act_to_int, int_to_act)
+
+
 class DeepQNagent:
 
     def __init__(self, n_towers, n_soldiers, create_model_fn):
@@ -40,6 +56,8 @@ class DeepQNagent:
         self.max_epsilon = 1 # You can't explore more than 100% of the time
         self.min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time
         self.decay = 0.01
+
+        (self.n_actions, self.act_to_int_d, self.int_to_act_d) = action_dicts(n_soldiers, n_towers)
 
         self.model = create_model_fn((n_towers,), n_towers)
         self.target_model = create_model_fn((n_towers,), n_towers)
@@ -84,8 +102,7 @@ class DeepQNagent:
         for index, (observation, action, reward, new_observation) in enumerate(mini_batch):
             max_future_q = reward + discount_factor * np.max(future_qs_list[index])
             current_qs = current_qs_list[index]
-            action2 = np.argmax(action)
-            current_qs[action2] = (1 - learning_rate) * current_qs[action2] + learning_rate * max_future_q
+            current_qs[action] = (1 - learning_rate) * current_qs[action] + learning_rate * max_future_q
 
             observation2 = np.array(observation)
             observation3 = observation2.sum(axis=0)
@@ -132,14 +149,8 @@ def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_roun
         encoded2 = encoded.sum(axis=0)
         encoded_reshaped = encoded2.reshape([1, encoded2.shape[0]])
         predicted = DQN_agent.model.predict(encoded_reshaped).flatten()
-        
-        prob_towers = tf.nn.softmax(predicted)
-        prob_towers = np.array(prob_towers)
-        prob_towers = prob_towers / prob_towers.sum()
-        action = [0 for tower in range(DQN_agent.n_towers)]
-        for soldier in range(DQN_agent.n_soldiers):
-            pick = np.random.choice(np.arange(0, DQN_agent.n_towers), p=prob_towers)
-            action[pick] += 1
+        action_num = np.argmax(predicted)
+        action = DQN_agent.int_to_act_d[action_num]
 
     if DQN_agent.steps_to_update_target_model >= 100:
         print('Copying main network weights to the target network weights')
