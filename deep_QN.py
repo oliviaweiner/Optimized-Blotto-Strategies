@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow import keras
 
+import blotto_game
 from collections import deque
 import time
 import random
