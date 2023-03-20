@@ -1,13 +1,12 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow import keras
-import math
-import itertools
 
-import blotto_game
 from collections import deque
 import time
 import random
+import math
+import itertools
 
 RANDOM_SEED = 5
 tf.random.set_seed(RANDOM_SEED)
@@ -61,8 +60,8 @@ class DeepQNagent:
 
         (self.n_actions, self.act_to_int_d, self.int_to_act_d) = action_dicts(n_soldiers, n_towers)
 
-        self.model = create_model_fn((n_towers,), n_towers)
-        self.target_model = create_model_fn((n_towers,), n_towers)
+        self.model = create_model_fn((n_towers,), self.n_actions)
+        self.target_model = create_model_fn((n_towers,), self.n_actions)
         self.target_model.set_weights(self.model.get_weights())
 
         self.replay_memory = deque(maxlen=50_000)
@@ -154,10 +153,9 @@ def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_roun
         action_num = np.argmax(predicted)
         action = DQN_agent.int_to_act_d[action_num]
 
-    if DQN_agent.steps_to_update_target_model >= 100:
+    if DQN_agent.steps_to_update_target_model >= 25:
         print('Copying main network weights to the target network weights')
         DQN_agent.target_model.set_weights(DQN_agent.model.get_weights())
         DQN_agent.steps_to_update_target_model = 0
         DQN_agent.epsilon = DQN_agent.min_epsilon + (DQN_agent.max_epsilon - DQN_agent.min_epsilon) * np.exp(-DQN_agent.decay * DQN_agent.total_steps)
-
     return action
