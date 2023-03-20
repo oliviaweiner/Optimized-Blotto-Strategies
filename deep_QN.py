@@ -128,7 +128,7 @@ def DQN_strategy(self_agent, prev_round_strategies, prev_round_scores, prev_roun
     if DQN_agent.last_observation != None:
         DQN_agent.replay_memory.append([DQN_agent.last_observation, DQN_agent.last_action, DQN_agent.last_reward, observation])
     DQN_agent.last_observation = observation
-    DQN_agent.last_action = observation[self_index]
+    DQN_agent.last_action = DQN_agent.act_to_int_d[str(observation[self_index])]
     DQN_agent.last_reward = prev_round_scores[self_index]
 
     DQN_agent.steps_to_update_target_model += 1
