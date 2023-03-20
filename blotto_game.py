@@ -1,4 +1,5 @@
 import numpy as np
+import threading
 
 class BlottoAgent:
     
@@ -15,18 +16,33 @@ class BlottoAgent:
     def get_next_strategy(self, prev_round_strategies, prev_round_scores, prev_round_wins, self_index):
         return self.strategy_func(self, prev_round_strategies, prev_round_scores, prev_round_wins, self_index)
     
-def simulate_blotto_game(agents, num_rounds):
+def simulate_blotto_game(agents, num_rounds, num_soldiers):
     strategies = [agent.get_opening_strategy() for agent in agents]
     historical_scores = []
     historical_wins = []
     for r in range(num_rounds):
+        if r % 50 == 0:
+            print('ROUND ' + str(r))
+        for strat in strategies:
+            assert sum(strat) == num_soldiers
         scores, wins = calculate_scores_and_wins(strategies)
         historical_scores.append(scores)
         historical_wins.append(wins)
-        strategies = [agent.get_next_strategy(strategies, scores, wins, i) for i, agent in enumerate(agents)]
+        next_strategies = [None] * len(agents)
+        threadies = []
+        for i, agent in enumerate(agents):
+            thready = threading.Thread(target=fill_with_strategy, args=(next_strategies, agent.get_next_strategy, strategies, scores, wins, i))
+            threadies.append(thready)
+            thready.start()
+        for thready in threadies:
+            thready.join()
+        strategies = next_strategies
     listy = [historical_scores, historical_wins, average_scores_and_wins(historical_scores, historical_wins)]
     return listy
     
+def fill_with_strategy(list, strategy_func, strategies, scores, wins, i):
+    list[i] = strategy_func(strategies, scores, wins, i)
+
 def calculate_scores_and_wins(strategies):
     num_players = len(strategies)
     num_towers = len(strategies[0])
